@@ -9,7 +9,7 @@ from langchain.llms import OpenAI
 
 
 token = "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" 
-llm = OpenAI(temperature=1, openai_api_key=token,max_tokens = 1024)
+llm = OpenAI(temperature=1, openai_api_key=config.token,max_tokens = 1024)
 
 
 
