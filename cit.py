@@ -1,124 +1,71 @@
-#import pandas as pd
-#import gpt_2_simple as gpt2
-#from datetime import datetime
-#data =  pd.read_csv("/Users/sidharthmannmadhan/Documents/CITdata3.csv")
-
-#sess = gpt2.start_tf_sess()
-#gpt2.finetune(sess,dataset=data,model_name='124M',steps=100,restore_from ='fresh' ,run_name = 'runl',print_every=10,sample_every=200,save_every=500)
-
-#from transformers import pipeline, set_seed
-#from tensorflow.python.keras.saving.hdf5_format import save_attributes_to_hdf5_group 
-#generator = pipeline('text-generation', model='gpt2')
-#set_seed(42)
-#output = generator("chicken stew recipe,", max_length=500, num_return_sequences=3)
-#print(output)
-
-from transformers import FlaxAutoModelForSeq2SeqLM
-from transformers import AutoTokenizer
+from langchain.llms import OpenAI
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain.chains import SimpleSequentialChain
 import streamlit as st
+from streamlit_chat import message
+from langchain.chains import ConversationChain
+from langchain.llms import OpenAI
 
 
-MODEL_NAME_OR_PATH = "flax-community/t5-recipe-generation"
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, use_fast=True)
-model = FlaxAutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME_OR_PATH)
+token = "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" 
+llm = OpenAI(temperature=1, openai_api_key=token,max_tokens = 1024)
 
 
 
-prefix = "items: "
-# generation_kwargs = {
-#     "max_length": 512,
-#     "min_length": 64,
-#     "no_repeat_ngram_size": 3,
-#     "early_stopping": True,
-#     "num_beams": 5,
-#     "length_penalty": 1.5,
-# }
-generation_kwargs = {
-    "max_length": 512,
-    "min_length": 64,
-    "no_repeat_ngram_size": 3,
-    "do_sample": True,
-    "top_k": 60,
-    "top_p": 0.95
-}
 
 
-special_tokens = tokenizer.all_special_tokens
-tokens_map = {
-    "<sep>": "--",
-    "<section>": "\n"
-}
-def skip_special_tokens(text, special_tokens):
-    for token in special_tokens:
-        text = text.replace(token, "")
 
-    return text
 
-def target_postprocessing(texts, special_tokens):
-    if not isinstance(texts, list):
-        texts = [texts]
+def load_chain_ingredients():
+    template = """Your job is to come up with a recipe with ingredients and instructions from the ingredients list that the users suggests.
+    % INGREDIENTS LIST
+    {ingredients_list}
+
+    YOUR RESPONSE:
+    """
+    prompt_template = PromptTemplate(input_variables=["ingredients_list"], template=template)
+
+    location_chain = LLMChain(llm=llm, prompt=prompt_template)
+    return location_chain
+
+
+
+loc_chain = load_chain_ingredients()
+
+overall_chain = SimpleSequentialChain(chains=[loc_chain], verbose=True)
+
+st.set_page_config(page_title=" ChefInTech", page_icon=":chef:")
+if "generated" not in st.session_state:
+    st.session_state["generated"] = []
+
+if "past" not in st.session_state:
+    st.session_state["past"] = []
+
+
+def get_text():
     
-    new_texts = []
-    for text in texts:
-        text = skip_special_tokens(text, special_tokens)
+    input_text = st.chat_input("", key="input")
+    input_2 = "recipe"
+    input_3 = "ingredients"
+    input_4 = "and"
+    input_5 =  "with"
+    input_6 = "instruction"
+    input_text = " ".join([input_text,input_2,input_5,input_3,input_4,input_5,input_6])
+    
+    return input_text
+    
 
-        for k, v in tokens_map.items():
-            text = text.replace(k, v)
+user_input = get_text()
 
-        new_texts.append(text)
+if user_input:
+    output = overall_chain.run(input=user_input)
 
-    return new_texts
+    #st.session_state.past.append(user_input)
+    #st.session_state.generated.append(output)
+    st.write(output)
+if st.session_state["generated"]:
 
-def generation_function(texts):
-    _inputs = texts if isinstance(texts, list) else [texts]
-    inputs = [prefix + inp for inp in _inputs]
-    inputs = tokenizer(
-        inputs, 
-        max_length=256, 
-        padding="max_length", 
-        truncation=True, 
-        return_tensors="jax"
-    )
-
-    input_ids = inputs.input_ids
-    attention_mask = inputs.attention_mask
-
-    output_ids = model.generate(
-        input_ids=input_ids, 
-        attention_mask=attention_mask,
-        **generation_kwargs
-    )
-    generated = output_ids.sequences
-    generated_recipe = target_postprocessing(
-        tokenizer.batch_decode(generated, skip_special_tokens=False),
-        special_tokens
-    )
-    return generated_recipe
-
-
-#items = ["chicken,chilly powder,butter,oil"]
-items = st.text_area("Enter the ingredients,item name: ")
-if st.button('Submit', key = 'one'):
-    generated = generation_function(items)
-    for text in generated:
-        sections = text.split("\n")
-    for section in sections:
-        section = section.strip()
-        if section.startswith("title:"):
-            section = section.replace("title:", "")
-            headline = "TITLE"
-        elif section.startswith("ingredients:"):
-            section = section.replace("ingredients:", "")
-            headline = "INGREDIENTS"
-        elif section.startswith("directions:"):
-            section = section.replace("directions:", "")
-            headline = "Instruction"
-        
-        if headline == "TITLE":
-            st.write(f"[{headline}]: {section.strip().capitalize()}")
-        else:
-            section_info = [f"  - {i+1}: {info.strip().capitalize()}" for i, info in enumerate(section.split("--"))]
-            st.write(f"[{headline}]:")
-            st.write("\n".join(section_info))
-
-    st.write("-" * 130)
+    for i in range(len(st.session_state["generated"]) - 1, -1, -1):
+        message(st.session_state["generated"][i], key=str(i))
+        message(st.session_state["past"][i], is_user=True, key=str(i) + "_user")
