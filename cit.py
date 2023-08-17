@@ -4,7 +4,7 @@ import openai
 from streamlit_chat import message
 
 
-openai.api_key = st.secret["api_key"]
+openai.api_key = st.secrets["api_key"]
 
 if 'generated' not in st.session_state:
     st.session_state['generated'] = []
