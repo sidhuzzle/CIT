@@ -26,7 +26,7 @@ st.sidebar.title("Filters")
 time = st.sidebar.slider('Cooking time', 0, 100,key = 'one')
 
 utensils =  st.sidebar.multiselect('MAJOR APPLIANCES',['Stove or cooking range','Mixer or food processor','Grinder','Refrigerator','Microwave Oven','Induction stove','Rice cooker'])
-
+utensils = ' '.join([str(elem) for elem in utensils])
 servings = st.sidebar.slider('No of Servings', 1, 10,key = 'two')
 
 
