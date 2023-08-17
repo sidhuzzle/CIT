@@ -64,4 +64,6 @@ if prompt := st.chat_input():
         #st.write(user_input)
 
         output = generate_response(user_input)
+        print(len(output)
         st.write(output)
+        
