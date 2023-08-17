@@ -1,5 +1,5 @@
 import streamlit as st
-from hugchat import hugchat
+
 import openai
 from streamlit_chat import message
 
