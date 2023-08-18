@@ -41,7 +41,7 @@ def generate_response(prompt):
     st.session_state['messages'].append({"role": "user", "content": prompt})
 
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-3.5-turbo",max_tokens = 1200,temperature = 0.7,
         messages=st.session_state['messages']
     )
     response = completion.choices[0].message.content
