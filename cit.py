@@ -52,7 +52,7 @@ if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
-        s = ['how much','gm','gram','kilogram','what does','quantity','color','colour','kg','tablespoon','teaspoon','boil','heat','freeze','required','hi','hello','hey','calories','diet','calorie']
+        s = ['how much','gm','gram','kilogram','what does','quantity','color','colour','kg','tablespoon','teaspoon','boil','heat','freeze','required','hi','hello','hey','calories','who is']
         for i in s:
             if i in prompt.split():
                 user_input = prompt
